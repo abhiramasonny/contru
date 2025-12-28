@@ -54,12 +54,12 @@ export async function getMe() {
   return data.user as ApiUser;
 }
 
-export async function analyzeDocument(url: string, year: number) {
+export async function analyzeDocument(url: string, year: number, force?: boolean) {
   const res = await fetch(apiUrl("/api/analyze"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ url, year })
+    body: JSON.stringify({ url, year, force: Boolean(force) })
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to analyze");

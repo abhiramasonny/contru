@@ -33,6 +33,7 @@ export default function AnalyticsPage({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isRescanning, setIsRescanning] = useState(false);
 
   const years = useMemo(() => {
     const current = new Date().getFullYear();
@@ -140,6 +141,20 @@ export default function AnalyticsPage({
     }
   };
 
+  const handleRescan = async () => {
+    if (!documentUrl) return;
+    setIsRescanning(true);
+    setError('');
+    try {
+      const response = await analyzeDocument(documentUrl, year, true);
+      setData(response);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsRescanning(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar user={user} onSignOut={onSignOut} onHome={onHome} />
@@ -210,7 +225,7 @@ export default function AnalyticsPage({
           ) : error ? (
             <p className="text-red-400 text-sm">{error}</p>
           ) : data ? (
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
+            <div>
               <div className="w-full">
                 {userHeatmap ? (
                   <>
@@ -233,7 +248,7 @@ export default function AnalyticsPage({
                   </p>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-6 text-sm text-gray-300 w-full lg:w-auto">
+              <div className="mt-8 grid grid-cols-2 gap-6 text-sm text-gray-300">
                 <div>
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">
                     Your activities
@@ -271,6 +286,13 @@ export default function AnalyticsPage({
             Group activity
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleRescan}
+              disabled={isRescanning || isLoading}
+              className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-800 rounded-md hover:bg-gray-900 disabled:opacity-60"
+            >
+              {isRescanning ? 'Rescanning…' : 'Rescan'}
+            </button>
             <button
               onClick={handleExport}
               className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-800 rounded-md hover:bg-gray-900"

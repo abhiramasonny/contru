@@ -433,7 +433,8 @@ app.post("/api/analyze", async (req, res) => {
     const cacheKey = `${fileId}:${year}`;
     const analysisCache = await readAnalysisCache();
     const cached = analysisCache.get(cacheKey);
-    if (cached?.payload) {
+    const force = Boolean(req.body?.force);
+    if (!force && cached?.payload) {
       return res.json(cached.payload);
     }
 
