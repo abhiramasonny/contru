@@ -7,9 +7,10 @@ interface DashboardProps {
   onAnalyze: (url: string) => void;
   onSignOut: () => void;
   user: ApiUser | null;
+  onHome: () => void;
 }
 
-export default function Dashboard({ onAnalyze, onSignOut, user }: DashboardProps) {
+export default function Dashboard({ onAnalyze, onSignOut, user, onHome }: DashboardProps) {
   const [url, setUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -21,7 +22,7 @@ export default function Dashboard({ onAnalyze, onSignOut, user }: DashboardProps
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar user={user} onSignOut={onSignOut} />
+      <Navbar user={user} onSignOut={onSignOut} onHome={onHome} />
 
       <div className="max-w-2xl mx-auto px-6 py-24">
         <div className="text-center mb-12">

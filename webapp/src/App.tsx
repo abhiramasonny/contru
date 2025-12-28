@@ -60,6 +60,7 @@ function App() {
           <Dashboard
             user={user}
             onSignOut={handleLogout}
+            onHome={() => setCurrentView('landing')}
             onAnalyze={(url: string) => {
               setAnalysisUrl(url);
               setCurrentView('analytics');
@@ -72,6 +73,7 @@ function App() {
             user={user}
             documentUrl={analysisUrl}
             onSignOut={handleLogout}
+            onHome={() => setCurrentView('landing')}
             onBack={() => setCurrentView('dashboard')}
           />
         );

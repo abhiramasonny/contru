@@ -4,34 +4,86 @@ interface ContributionChartProps {
   contributors: Contributor[];
 }
 
-export default function ContributionChart({ contributors }: ContributionChartProps) {
-  const total = contributors.reduce((sum, item) => sum + item.count, 0);
-  const top = contributors.slice(0, 8);
+const COLORS = ['#1f6feb', '#2ea043', '#f59e0b', '#a855f7', '#ec4899', '#ef4444'];
 
+export default function ContributionChart({ contributors }: ContributionChartProps) {
   if (!contributors.length) {
     return <p className="text-sm text-gray-500">No contribution data yet.</p>;
   }
 
+  const total = contributors.reduce((sum, item) => sum + item.count, 0);
+  const slices = contributors.slice(0, 6).map((item, index) => ({
+    label: item.email ? `${item.name} · ${item.email}` : item.name,
+    value: item.count,
+    color: COLORS[index % COLORS.length],
+    key: `${item.id || item.email || item.name}-${item.count}`,
+  }));
+
+  const remainder = contributors.slice(6).reduce((sum, item) => sum + item.count, 0);
+  if (remainder > 0) {
+    slices.push({
+      label: 'Others',
+      value: remainder,
+      color: '#6b7280',
+      key: 'others',
+    });
+  }
+
+  let cumulative = 0;
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+
   return (
-    <div className="w-full space-y-4">
-      {top.map((item) => {
-        const percent = total ? Math.round((item.count / total) * 100) : 0;
-        const label = item.email ? `${item.name} · ${item.email}` : item.name;
-        return (
-          <div key={`${item.id || item.email || item.name}-${item.count}`} className="space-y-1">
-            <div className="flex justify-between text-xs text-gray-400">
-              <span className="truncate">{label}</span>
-              <span>{item.count} · {percent}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-gray-900">
-              <div
-                className="h-2 rounded-full bg-emerald-500"
-                style={{ width: `${Math.max(percent, 2)}%` }}
+    <div className="flex flex-col md:flex-row items-center gap-6">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        {slices.map((slice, index) => {
+          const fraction = total ? slice.value / total : 0;
+          const dash = fraction * circumference;
+          const offset = cumulative * circumference;
+          cumulative += fraction;
+          return (
+            <circle
+              key={slice.key}
+              cx="90"
+              cy="90"
+              r={radius}
+              fill="none"
+              stroke={slice.color}
+              strokeWidth="26"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-offset}
+              transform={`rotate(-90 90 90)`}
+            />
+          );
+        })}
+        <circle cx="90" cy="90" r="44" fill="#0f0f11" />
+        <text
+          x="90"
+          y="90"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#e5e7eb"
+          fontSize="14"
+          fontWeight="600"
+        >
+          {total}
+        </text>
+      </svg>
+      <div className="space-y-3 text-sm">
+        {slices.map((slice) => {
+          const percent = total ? Math.round((slice.value / total) * 100) : 0;
+          return (
+            <div key={slice.key} className="flex items-center gap-3 text-gray-300">
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: slice.color }}
               />
+              <span className="truncate max-w-[240px]">{slice.label}</span>
+              <span className="text-gray-500">{percent}%</span>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

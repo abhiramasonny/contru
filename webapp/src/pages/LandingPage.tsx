@@ -19,7 +19,7 @@ export default function LandingPage({ onGetStarted, onAuth, isAuthenticated }: L
 
       <div className="h-[calc(100vh-80px)] flex items-center justify-center px-6">
         <div className="text-center max-w-3xl">
-          <h1 className="text-8xl font-semibold mb-6 tracking-tight">
+          <h1 className="text-[18vw] leading-none font-semibold mb-6 tracking-tight">
             Contru
           </h1>
           <p className="text-xl text-gray-400">

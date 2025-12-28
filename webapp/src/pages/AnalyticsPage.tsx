@@ -14,6 +14,7 @@ interface AnalyticsPageProps {
   onBack: () => void;
   documentUrl: string;
   onSignOut: () => void;
+  onHome: () => void;
   user: ApiUser | null;
 }
 
@@ -21,6 +22,7 @@ export default function AnalyticsPage({
   onBack,
   documentUrl,
   onSignOut,
+  onHome,
   user,
 }: AnalyticsPageProps) {
   const [year, setYear] = useState(new Date().getFullYear());
@@ -47,6 +49,17 @@ export default function AnalyticsPage({
       })
       .finally(() => setIsLoading(false));
   }, [documentUrl, year]);
+
+  const userStats = useMemo(() => {
+    if (!data || !user) return { count: 0, rank: null };
+    const sorted = [...data.contributors].sort((a, b) => b.count - a.count);
+    const entry =
+      sorted.find((c) => c.email && user.email && c.email === user.email) ||
+      sorted.find((c) => user.name && c.name === user.name);
+    if (!entry) return { count: 0, rank: null };
+    const rank = sorted.findIndex((c) => c === entry) + 1;
+    return { count: entry.count, rank };
+  }, [data, user]);
 
   const handleExport = () => {
     if (!data) return;
@@ -77,7 +90,7 @@ export default function AnalyticsPage({
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar user={user} onSignOut={onSignOut} />
+      <Navbar user={user} onSignOut={onSignOut} onHome={onHome} />
 
       <div className="max-w-5xl mx-auto px-6 py-8">
         <button
@@ -116,10 +129,40 @@ export default function AnalyticsPage({
           </div>
         </div>
 
+        <div className="mb-10">
+          <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+            <Calendar className="w-4 h-4" />
+            Your activity
+          </div>
+          <div className="bg-gray-950 rounded-lg p-6">
+            {isLoading ? (
+              <div className="animate-pulse space-y-3">
+                <div className="h-4 w-32 bg-gray-900 rounded"></div>
+                <div className="h-10 w-40 bg-gray-900 rounded"></div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-8">
+                <div>
+                  <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">
+                    Your activities
+                  </p>
+                  <h3 className="text-3xl font-semibold">{userStats.count}</h3>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Your rank</p>
+                  <h3 className="text-3xl font-semibold">
+                    {userStats.rank ? `#${userStats.rank}` : '—'}
+                  </h3>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3 text-sm text-gray-400">
             <Calendar className="w-4 h-4" />
-            Activity
+            Group activity
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -145,7 +188,14 @@ export default function AnalyticsPage({
 
         <div className="bg-gray-950 rounded-lg p-6 mb-12">
           {isLoading ? (
-            <p className="text-gray-500 text-sm">Analyzing activity…</p>
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 w-40 bg-gray-900 rounded"></div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 70 }).map((_, idx) => (
+                  <div key={idx} className="h-3 w-3 rounded-sm bg-gray-900" />
+                ))}
+              </div>
+            </div>
           ) : error ? (
             <p className="text-red-400 text-sm">{error}</p>
           ) : data ? (
@@ -158,7 +208,18 @@ export default function AnalyticsPage({
         <div className="mb-12">
           <h2 className="text-lg font-semibold mb-4">Team contributions</h2>
           <div className="bg-gray-950 rounded-lg p-6">
-            <ContributionChart contributors={data?.contributors || []} />
+            {isLoading ? (
+              <div className="animate-pulse flex items-center gap-6">
+                <div className="w-32 h-32 rounded-full bg-gray-900" />
+                <div className="space-y-2">
+                  <div className="h-3 w-48 bg-gray-900 rounded" />
+                  <div className="h-3 w-40 bg-gray-900 rounded" />
+                  <div className="h-3 w-32 bg-gray-900 rounded" />
+                </div>
+              </div>
+            ) : (
+              <ContributionChart contributors={data?.contributors || []} />
+            )}
           </div>
         </div>
 
