@@ -452,7 +452,7 @@ app.post("/api/analyze", async (req, res) => {
       const batch = response.data.activities || [];
       activities.push(...batch);
       pageToken = response.data.nextPageToken;
-    } while (pageToken && activities.length < 1000);
+    } while (pageToken && activities.length < 10000);
 
     const peopleDirectory = new Map();
     const consentDirectory = await readConsents();

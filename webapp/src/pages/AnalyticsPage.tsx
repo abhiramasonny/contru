@@ -211,14 +211,22 @@ export default function AnalyticsPage({
             <p className="text-red-400 text-sm">{error}</p>
           ) : data ? (
             <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
-              <div className="w-full lg:w-auto">
+              <div className="w-full">
                 {userHeatmap ? (
-                  <ContributionGraph
-                    heatmap={userHeatmap}
-                    year={data.year}
-                    variant="lg"
-                    className="mx-auto"
-                  />
+                  <>
+                    <ContributionGraph
+                      heatmap={userHeatmap}
+                      year={data.year}
+                      variant="lg"
+                      className="hidden md:block mx-auto w-full md:w-[80vw] max-w-4xl"
+                    />
+                    <ContributionGraph
+                      heatmap={userHeatmap}
+                      year={data.year}
+                      variant="sm"
+                      className="md:hidden"
+                    />
+                  </>
                 ) : (
                   <p className="text-sm text-gray-500">
                     We could not map your identity yet. Register to see your activity.
