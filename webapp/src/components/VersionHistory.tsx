@@ -240,7 +240,7 @@ export default function VersionHistory({
         ) : error ? (
           <p className="text-sm text-blue-300">{error}</p>
         ) : visibleDays.length ? (
-          <div className="space-y-4">
+          <div className="flex gap-4 overflow-x-auto pb-2">
             {visibleDays.map((entry) => {
               const dayData = historyByDay[entry.day];
               const isExpanded = expandedDays.includes(entry.day);
@@ -255,7 +255,7 @@ export default function VersionHistory({
               return (
                 <div
                   key={entry.day}
-                  className="border border-slate-800/70 rounded-lg p-4 bg-slate-950/40"
+                  className="border border-slate-800/70 rounded-lg p-4 bg-slate-950/40 w-72 shrink-0"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
@@ -297,7 +297,7 @@ export default function VersionHistory({
                               </span>
                             ) : null}
                           </div>
-                          <div className="space-y-3">
+                          <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
                             {dayData.items.map((item) => {
                               const meta = ACTION_META[item.actionType] || ACTION_META.unknown;
                               const Icon = meta.icon;
@@ -342,7 +342,7 @@ export default function VersionHistory({
                               onClick={() =>
                                 loadDay(entry.day, dayData.nextPageToken || undefined)
                               }
-                              className="mt-2 px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900"
+                              className="mt-2 px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900 w-full"
                             >
                               Load more events
                             </button>
@@ -360,7 +360,7 @@ export default function VersionHistory({
             {dayLimit < activityDays.length ? (
               <button
                 onClick={() => setDayLimit((prev) => prev + 20)}
-                className="w-full px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900"
+                className="px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900 h-full"
               >
                 Show more days
               </button>
