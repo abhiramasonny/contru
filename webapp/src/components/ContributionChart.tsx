@@ -4,16 +4,16 @@ interface ContributionChartProps {
   contributors: Contributor[];
 }
 
-const COLORS = ['#1f6feb', '#2ea043', '#f59e0b', '#a855f7', '#ec4899', '#ef4444'];
+const COLORS = ['#1f6feb', '#22c55e', '#f59e0b', '#06b6d4', '#f97316', '#ef4444'];
 
 export default function ContributionChart({ contributors }: ContributionChartProps) {
   if (!contributors.length) {
-    return <p className="text-sm text-gray-500">No contribution data yet.</p>;
+    return <p className="text-sm text-slate-500">No contribution data yet.</p>;
   }
 
   const total = contributors.reduce((sum, item) => sum + item.count, 0);
   const slices = contributors.slice(0, 6).map((item, index) => ({
-    label: item.email ? `${item.name} · ${item.email}` : item.name,
+    label: item.email ? `${item.name} | ${item.email}` : item.name,
     value: item.count,
     color: COLORS[index % COLORS.length],
     key: `${item.id || item.email || item.name}-${item.count}`,
@@ -56,7 +56,7 @@ export default function ContributionChart({ contributors }: ContributionChartPro
             />
           );
         })}
-        <circle cx="90" cy="90" r="44" fill="#0f0f11" />
+        <circle cx="90" cy="90" r="44" fill="#0b1118" />
         <text
           x="90"
           y="90"
@@ -73,13 +73,13 @@ export default function ContributionChart({ contributors }: ContributionChartPro
         {slices.map((slice) => {
           const percent = total ? Math.round((slice.value / total) * 100) : 0;
           return (
-            <div key={slice.key} className="flex items-center gap-3 text-gray-300">
+            <div key={slice.key} className="flex items-center gap-3 text-slate-300">
               <span
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: slice.color }}
               />
               <span className="truncate max-w-[240px]">{slice.label}</span>
-              <span className="text-gray-500">{percent}%</span>
+              <span className="text-slate-500">{percent}%</span>
             </div>
           );
         })}

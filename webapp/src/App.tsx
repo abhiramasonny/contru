@@ -96,10 +96,10 @@ function App() {
   };
 
   if (!authChecked) {
-    return <div className="min-h-screen bg-black text-white"></div>;
+    return <div className="min-h-screen text-white"></div>;
   }
 
-  return <div className="min-h-screen bg-black">{renderView()}</div>;
+  return <div className="min-h-screen text-white">{renderView()}</div>;
 }
 
 export default App;

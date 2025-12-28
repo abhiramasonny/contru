@@ -103,8 +103,8 @@ const ACTION_META: Record<
   unknown: {
     label: 'Other activity',
     icon: AlertOctagon,
-    badge: 'bg-gray-500/15 text-gray-300',
-    text: 'text-gray-300',
+    badge: 'bg-slate-500/15 text-slate-300',
+    text: 'text-slate-300',
   },
 };
 
@@ -217,25 +217,25 @@ export default function VersionHistory({
   };
 
   return (
-    <div className="mb-12">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div>
           <h2 className="text-lg font-semibold">Version history</h2>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-slate-400">
             Day-by-day snapshots of Drive activity. Content diffs require stored snapshots.
           </p>
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-slate-500">
           {activityDays.length ? `${activityDays.length} active day(s)` : 'No activity yet'}
         </div>
       </div>
 
-      <div className="bg-gray-950 rounded-lg p-6">
+      <div className="bg-slate-950/60 border border-slate-800/70 rounded-xl p-6">
         {isLoading ? (
           <div className="animate-pulse space-y-3">
-            <div className="h-4 w-40 bg-gray-900 rounded"></div>
-            <div className="h-3 w-72 bg-gray-900 rounded"></div>
-            <div className="h-3 w-52 bg-gray-900 rounded"></div>
+            <div className="h-4 w-40 bg-slate-900 rounded"></div>
+            <div className="h-3 w-72 bg-slate-900 rounded"></div>
+            <div className="h-3 w-52 bg-slate-900 rounded"></div>
           </div>
         ) : error ? (
           <p className="text-sm text-red-400">{error}</p>
@@ -255,16 +255,16 @@ export default function VersionHistory({
               return (
                 <div
                   key={entry.day}
-                  className="border border-gray-900 rounded-lg p-4 bg-black/40"
+                  className="border border-slate-800/70 rounded-lg p-4 bg-slate-950/40"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-200">{entry.day}</div>
-                      <div className="text-xs text-gray-500">{entry.count} activities</div>
+                      <div className="text-sm font-medium text-slate-200">{entry.day}</div>
+                      <div className="text-xs text-slate-500">{entry.count} activities</div>
                     </div>
                     <button
                       onClick={() => toggleDay(entry.day)}
-                      className="px-3 py-2 text-xs border border-gray-800 rounded-md hover:bg-gray-900"
+                      className="px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900"
                     >
                       {isExpanded ? 'Hide details' : 'Load details'}
                     </button>
@@ -273,7 +273,7 @@ export default function VersionHistory({
                   {isExpanded ? (
                     <div className="mt-4 space-y-3">
                       {loadingDays[entry.day] ? (
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Loading activity...
                         </div>
@@ -281,7 +281,7 @@ export default function VersionHistory({
                         <p className="text-xs text-red-400">{errors[entry.day]}</p>
                       ) : dayData ? (
                         <>
-                          <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+                          <div className="flex flex-wrap gap-2 text-xs text-slate-400">
                             <span>{dayData.items.length} events loaded</span>
                             {topActions.length ? (
                               <span>
@@ -304,7 +304,7 @@ export default function VersionHistory({
                               return (
                                 <div
                                   key={item.id}
-                                  className="border border-gray-900 rounded-lg p-3 bg-black/60"
+                                  className="border border-slate-800/70 rounded-lg p-3 bg-slate-950/70"
                                 >
                                   <div className="flex items-start gap-3">
                                     <div
@@ -314,20 +314,20 @@ export default function VersionHistory({
                                     </div>
                                     <div className="flex-1">
                                       <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div className="text-sm font-medium text-gray-200">
+                                        <div className="text-sm font-medium text-slate-200">
                                           {meta.label}
                                         </div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-slate-500">
                                           {formatTime(item.timestamp)}
                                         </div>
                                       </div>
-                                      <div className="text-xs text-gray-400 mt-1">
+                                      <div className="text-xs text-slate-400 mt-1">
                                         <span className={meta.text}>{formatActors(item)}</span>
-                                        <span className="text-gray-600"> | </span>
+                                        <span className="text-slate-600"> | </span>
                                         <span>{formatTargets(item)}</span>
                                       </div>
                                       {item.details?.length ? (
-                                        <div className="text-xs text-gray-500 mt-2">
+                                        <div className="text-xs text-slate-500 mt-2">
                                           {item.details.join(' | ')}
                                         </div>
                                       ) : null}
@@ -342,14 +342,14 @@ export default function VersionHistory({
                               onClick={() =>
                                 loadDay(entry.day, dayData.nextPageToken || undefined)
                               }
-                              className="mt-2 px-3 py-2 text-xs border border-gray-800 rounded-md hover:bg-gray-900"
+                              className="mt-2 px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900"
                             >
                               Load more events
                             </button>
                           ) : null}
                         </>
                       ) : (
-                        <p className="text-xs text-gray-500">No activity details found.</p>
+                        <p className="text-xs text-slate-500">No activity details found.</p>
                       )}
                     </div>
                   ) : null}
@@ -360,14 +360,14 @@ export default function VersionHistory({
             {dayLimit < activityDays.length ? (
               <button
                 onClick={() => setDayLimit((prev) => prev + 20)}
-                className="w-full px-3 py-2 text-xs border border-gray-800 rounded-md hover:bg-gray-900"
+                className="w-full px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900"
               >
                 Show more days
               </button>
             ) : null}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">No activity history yet.</p>
+          <p className="text-sm text-slate-500">No activity history yet.</p>
         )}
       </div>
     </div>

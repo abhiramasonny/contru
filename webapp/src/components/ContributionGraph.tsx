@@ -41,7 +41,7 @@ export default function ContributionGraph({
   }
 
   const intensityClasses = [
-    'bg-gray-900/60',
+    'bg-slate-900/60',
     'bg-emerald-900',
     'bg-emerald-700',
     'bg-emerald-500',
