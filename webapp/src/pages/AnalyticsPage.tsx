@@ -261,7 +261,7 @@ export default function AnalyticsPage({
         </div>
 
         <div className="grid lg:grid-cols-[260px_minmax(0,1fr)_320px] gap-6 mt-8">
-          <aside className="space-y-6">
+          <aside className="space-y-6 min-w-0">
             <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500">
                 <GitGraph className="w-3.5 h-3.5 text-emerald-400" />
@@ -322,7 +322,7 @@ export default function AnalyticsPage({
                   </div>
                 </div>
               ) : error ? (
-                <p className="text-xs text-red-400">{error}</p>
+                <p className="text-xs text-blue-300">{error}</p>
               ) : data ? (
                 <ContributionGraph heatmap={data.heatmap} year={data.year} variant="sm" />
               ) : (
@@ -347,12 +347,14 @@ export default function AnalyticsPage({
                   </div>
                 </div>
               ) : (
-                <ContributionChart contributors={data?.contributors || []} />
+                <div className="max-w-full overflow-hidden">
+                  <ContributionChart contributors={data?.contributors || []} />
+                </div>
               )}
             </div>
           </aside>
 
-          <main className="space-y-6">
+          <main className="space-y-6 min-w-0">
             <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/70 pb-3">
                 <div className="flex items-center gap-2 text-sm text-slate-300">
@@ -413,7 +415,7 @@ export default function AnalyticsPage({
                   </div>
                 </div>
               ) : error ? (
-                <p className="text-red-400 text-sm">{error}</p>
+                <p className="text-blue-300 text-sm">{error}</p>
               ) : data ? (
                 <div>
                   <div className="w-full">
@@ -473,7 +475,7 @@ export default function AnalyticsPage({
             </div>
           </main>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 min-w-0">
             <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500 mb-4">
                 <GitCommit className="w-3.5 h-3.5 text-emerald-400" />

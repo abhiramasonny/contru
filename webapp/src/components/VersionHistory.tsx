@@ -43,62 +43,62 @@ const ACTION_META: Record<
   rename: {
     label: 'Renamed item',
     icon: Tag,
-    badge: 'bg-amber-500/15 text-amber-300',
-    text: 'text-amber-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   move: {
     label: 'Moved item',
     icon: ArrowRightLeft,
-    badge: 'bg-sky-500/15 text-sky-300',
-    text: 'text-sky-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   create: {
     label: 'Created item',
     icon: FilePlus,
-    badge: 'bg-cyan-500/15 text-cyan-300',
-    text: 'text-cyan-300',
+    badge: 'bg-emerald-500/15 text-emerald-300',
+    text: 'text-emerald-300',
   },
   delete: {
     label: 'Deleted item',
     icon: Trash2,
-    badge: 'bg-rose-500/15 text-rose-300',
-    text: 'text-rose-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   restore: {
     label: 'Restored item',
     icon: RotateCcw,
-    badge: 'bg-lime-500/15 text-lime-300',
-    text: 'text-lime-300',
+    badge: 'bg-emerald-500/15 text-emerald-300',
+    text: 'text-emerald-300',
   },
   permissionChange: {
     label: 'Permission change',
     icon: ShieldCheck,
-    badge: 'bg-teal-500/15 text-teal-300',
-    text: 'text-teal-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   appliedLabelChange: {
     label: 'Label change',
     icon: Tag,
-    badge: 'bg-yellow-500/15 text-yellow-300',
-    text: 'text-yellow-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   settingsChange: {
     label: 'Settings change',
     icon: Settings,
-    badge: 'bg-orange-500/15 text-orange-300',
-    text: 'text-orange-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   dlpChange: {
     label: 'Security update',
     icon: ShieldAlert,
-    badge: 'bg-red-500/15 text-red-300',
-    text: 'text-red-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   reference: {
     label: 'Referenced elsewhere',
     icon: Link2,
-    badge: 'bg-slate-500/15 text-slate-300',
-    text: 'text-slate-300',
+    badge: 'bg-blue-500/15 text-blue-300',
+    text: 'text-blue-300',
   },
   unknown: {
     label: 'Other activity',
@@ -238,7 +238,7 @@ export default function VersionHistory({
             <div className="h-3 w-52 bg-slate-900 rounded"></div>
           </div>
         ) : error ? (
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-blue-300">{error}</p>
         ) : visibleDays.length ? (
           <div className="space-y-4">
             {visibleDays.map((entry) => {
@@ -278,7 +278,7 @@ export default function VersionHistory({
                           Loading activity...
                         </div>
                       ) : errors[entry.day] ? (
-                        <p className="text-xs text-red-400">{errors[entry.day]}</p>
+                        <p className="text-xs text-blue-300">{errors[entry.day]}</p>
                       ) : dayData ? (
                         <>
                           <div className="flex flex-wrap gap-2 text-xs text-slate-400">

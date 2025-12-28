@@ -4,7 +4,7 @@ interface ContributionChartProps {
   contributors: Contributor[];
 }
 
-const COLORS = ['#1f6feb', '#22c55e', '#f59e0b', '#06b6d4', '#f97316', '#ef4444'];
+const COLORS = ['#1f6feb', '#22c55e', '#0ea5e9', '#16a34a', '#38bdf8', '#4ade80'];
 
 export default function ContributionChart({ contributors }: ContributionChartProps) {
   if (!contributors.length) {
@@ -34,8 +34,9 @@ export default function ContributionChart({ contributors }: ContributionChartPro
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-6">
-      <svg width="180" height="180" viewBox="0 0 180 180">
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center gap-6">
+        <svg width="160" height="160" viewBox="0 0 180 180" className="shrink-0">
         {slices.map((slice, index) => {
           const fraction = total ? slice.value / total : 0;
           const dash = fraction * circumference;
@@ -68,21 +69,28 @@ export default function ContributionChart({ contributors }: ContributionChartPro
         >
           {total}
         </text>
-      </svg>
-      <div className="space-y-3 text-sm">
-        {slices.map((slice) => {
-          const percent = total ? Math.round((slice.value / total) * 100) : 0;
-          return (
-            <div key={slice.key} className="flex items-center gap-3 text-slate-300">
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: slice.color }}
-              />
-              <span className="truncate max-w-[240px]">{slice.label}</span>
-              <span className="text-slate-500">{percent}%</span>
-            </div>
-          );
-        })}
+        </svg>
+        <div className="flex-1 space-y-3 text-sm min-w-0">
+          {slices.map((slice) => {
+            const percent = total ? Math.round((slice.value / total) * 100) : 0;
+            return (
+              <div
+                key={slice.key}
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-slate-300"
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: slice.color }}
+                />
+                <span className="truncate">{slice.label}</span>
+                <span className="text-slate-500">{percent}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="h-1 rounded-full bg-slate-900">
+        <div className="h-1 w-2/3 rounded-full bg-emerald-500/80" />
       </div>
     </div>
   );
