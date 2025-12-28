@@ -3,6 +3,7 @@ import { ArrowLeft, Calendar, Download, UserCheck } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ContributionGraph from '../components/ContributionGraph';
 import ContributionChart from '../components/ContributionChart';
+import ContributionBreakdown from '../components/ContributionBreakdown';
 import {
   analyzeDocument,
   registerConsent,
@@ -338,6 +339,10 @@ export default function AnalyticsPage({
               <ContributionChart contributors={data?.contributors || []} />
             )}
           </div>
+        </div>
+
+        <div className="mb-12">
+          <ContributionBreakdown contributors={data?.contributors || []} />
         </div>
 
         <details className="mb-6 bg-gray-950 rounded-lg border border-gray-900 p-4">
