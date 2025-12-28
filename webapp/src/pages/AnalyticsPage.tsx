@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import ContributionGraph from '../components/ContributionGraph';
 import ContributionChart from '../components/ContributionChart';
 import ContributionBreakdown from '../components/ContributionBreakdown';
+import VersionHistory from '../components/VersionHistory';
 import {
   analyzeDocument,
   registerConsent,
@@ -390,6 +391,13 @@ export default function AnalyticsPage({
             )}
           </div>
         </div>
+
+        <VersionHistory
+          documentUrl={documentUrl}
+          heatmap={data?.heatmap}
+          isLoading={isLoading}
+          error={error}
+        />
 
         <details className="mb-6 bg-gray-950 rounded-lg border border-gray-900 p-4">
           <summary className="cursor-pointer text-sm font-medium text-gray-200">

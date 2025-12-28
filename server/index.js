@@ -372,6 +372,205 @@ function buildActivityTimeline(activities, year, peopleDirectory, permissionsDir
     .slice(0, 14);
 }
 
+function parseDayRange(day) {
+  if (typeof day !== "string") return null;
+  const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const date = Number(match[3]);
+  const start = new Date(year, month - 1, date, 0, 0, 0, 0);
+  if (Number.isNaN(start.getTime())) return null;
+  const end = new Date(year, month - 1, date + 1, 0, 0, 0, 0);
+  return { day: isoDay(start), start, end };
+}
+
+function resolveActionType(detail) {
+  if (!detail) return "unknown";
+  const keys = [
+    "edit",
+    "create",
+    "delete",
+    "rename",
+    "move",
+    "restore",
+    "comment",
+    "permissionChange",
+    "appliedLabelChange",
+    "settingsChange",
+    "dlpChange",
+    "reference"
+  ];
+  for (const key of keys) {
+    if (detail[key]) return key;
+  }
+  return "unknown";
+}
+
+function formatTargetTitle(target) {
+  if (!target) return null;
+  if (target.driveItem) {
+    const title = target.driveItem.title || "Untitled item";
+    const type = target.driveItem.driveFolder
+      ? "folder"
+      : target.driveItem.driveFile
+        ? "file"
+        : "item";
+    return { title, type, mimeType: target.driveItem.mimeType || null };
+  }
+  if (target.drive) {
+    return { title: target.drive.title || "Shared drive", type: "drive", mimeType: null };
+  }
+  if (target.fileComment) {
+    const parentTitle = target.fileComment.parent?.title || "File";
+    return { title: `Comment on ${parentTitle}`, type: "comment", mimeType: null };
+  }
+  return null;
+}
+
+function describeActionDetail(actionType, detail) {
+  const details = [];
+  if (!detail) return details;
+  if (actionType === "rename" && detail.rename) {
+    const from = detail.rename.oldTitle ? `"${detail.rename.oldTitle}"` : null;
+    const to = detail.rename.newTitle ? `"${detail.rename.newTitle}"` : null;
+    if (from && to) details.push(`Renamed from ${from} to ${to}`);
+    else if (to) details.push(`Renamed to ${to}`);
+  }
+  if (actionType === "move" && detail.move) {
+    const added = (detail.move.addedParents || [])
+      .map((parent) => parent.driveItem?.title || parent.drive?.title)
+      .filter(Boolean);
+    const removed = (detail.move.removedParents || [])
+      .map((parent) => parent.driveItem?.title || parent.drive?.title)
+      .filter(Boolean);
+    if (added.length) details.push(`Moved to ${added.join(", ")}`);
+    if (removed.length) details.push(`Removed from ${removed.join(", ")}`);
+  }
+  if (actionType === "permissionChange" && detail.permissionChange) {
+    const added = detail.permissionChange.addedPermissions?.length || 0;
+    const removed = detail.permissionChange.removedPermissions?.length || 0;
+    if (added) details.push(`Added ${added} permission${added === 1 ? "" : "s"}`);
+    if (removed) details.push(`Removed ${removed} permission${removed === 1 ? "" : "s"}`);
+  }
+  if (actionType === "comment" && detail.comment) {
+    if (detail.comment.post) details.push("Comment posted");
+    if (detail.comment.suggestion) details.push("Suggestion updated");
+    if (detail.comment.assignment) details.push("Assignment updated");
+    if (detail.comment.mentionedUsers?.length) {
+      details.push(`Mentioned ${detail.comment.mentionedUsers.length} user(s)`);
+    }
+  }
+  if (actionType === "create" && detail.create) {
+    if (detail.create.copy) details.push("Created from a copy");
+    if (detail.create.new) details.push("Created new");
+    if (detail.create.upload) details.push("Uploaded");
+  }
+  if (actionType === "delete" && detail.delete?.type) {
+    details.push(`Deleted (${detail.delete.type.toLowerCase()})`);
+  }
+  if (actionType === "restore" && detail.restore?.type) {
+    details.push(`Restored (${detail.restore.type.toLowerCase()})`);
+  }
+  return details;
+}
+
+function resolveActorDisplay(actor, peopleDirectory, permissionsDirectory, consentDirectory) {
+  if (actor?.system) {
+    return { key: "system", name: "System", email: null };
+  }
+  if (actor?.administrator) {
+    return { key: "admin", name: "Administrator", email: null };
+  }
+  if (actor?.anonymous) {
+    return { key: "anonymous", name: "Anonymous", email: null };
+  }
+  return resolveActor(actor, peopleDirectory, permissionsDirectory, consentDirectory);
+}
+
+function normalizeActors(actors, peopleDirectory, permissionsDirectory, consentDirectory) {
+  const results = new Map();
+  for (const actor of actors) {
+    if (!actor) continue;
+    const resolved = resolveActorDisplay(
+      actor,
+      peopleDirectory,
+      permissionsDirectory,
+      consentDirectory
+    );
+    if (!results.has(resolved.key)) {
+      results.set(resolved.key, {
+        id: resolved.key,
+        name: resolved.name,
+        email: resolved.email || null
+      });
+    }
+  }
+  return Array.from(results.values());
+}
+
+function normalizeActivityActions(
+  activity,
+  peopleDirectory,
+  permissionsDirectory,
+  consentDirectory
+) {
+  const actions = activity.actions?.length
+    ? activity.actions
+    : [
+        {
+          detail: activity.primaryActionDetail,
+          timestamp: activity.timestamp,
+          timeRange: activity.timeRange
+        }
+      ];
+  const items = [];
+  actions.forEach((action, idx) => {
+    const time =
+      action.timestamp || action.timeRange?.endTime || activity.timestamp || activity.timeRange?.endTime;
+    const detail = action.detail || activity.primaryActionDetail || null;
+    const actionType = resolveActionType(detail);
+    const actionDetails = describeActionDetail(actionType, detail);
+    const actors = normalizeActors(
+      action.actor ? [action.actor] : activity.actors || [],
+      peopleDirectory,
+      permissionsDirectory,
+      consentDirectory
+    );
+    const targets = (action.target ? [action.target] : activity.targets || [])
+      .map(formatTargetTitle)
+      .filter(Boolean);
+    items.push({
+      id: `${time || "unknown"}:${actionType}:${idx}`,
+      timestamp: time || null,
+      actionType,
+      actors,
+      targets,
+      details: actionDetails
+    });
+  });
+  return items;
+}
+
+function summarizeHistoryItems(items) {
+  const byAction = {};
+  const actorCounts = new Map();
+  items.forEach((item) => {
+    const key = item.actionType || "unknown";
+    byAction[key] = (byAction[key] || 0) + 1;
+    item.actors.forEach((actor) => {
+      const count = actorCounts.get(actor.id) || { name: actor.name, count: 0 };
+      count.count += 1;
+      actorCounts.set(actor.id, count);
+    });
+  });
+  return {
+    total: items.length,
+    byAction,
+    byActor: Array.from(actorCounts.values()).sort((a, b) => b.count - a.count)
+  };
+}
+
 app.get("/auth/google", (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -589,6 +788,107 @@ app.post("/api/analyze", async (req, res) => {
   } catch (err) {
     console.error(err?.response?.data || err);
     res.status(500).json({ error: "Failed to analyze file" });
+  }
+});
+
+app.post("/api/history/day", async (req, res) => {
+  const client = getClient(req);
+  if (!client) return res.status(401).json({ error: "Not authenticated" });
+
+  const fileId = parseFileId(req.body?.url);
+  if (!fileId) return res.status(400).json({ error: "Invalid Google Docs/Slides URL" });
+
+  const range = parseDayRange(req.body?.day);
+  if (!range) return res.status(400).json({ error: "Invalid day" });
+
+  try {
+    const drive = google.drive({ version: "v3", auth: client });
+    const activity = google.driveactivity({ version: "v2", auth: client });
+    const people = google.people({ version: "v1", auth: client });
+
+    const filter = `time >= "${range.start.toISOString()}" AND time < "${range.end.toISOString()}"`;
+
+    const response = await activity.activity.query({
+      requestBody: {
+        itemName: `items/${fileId}`,
+        filter,
+        pageSize: 100,
+        pageToken: req.body?.pageToken || undefined,
+        consolidationStrategy: { none: {} }
+      }
+    });
+
+    const activities = response.data.activities || [];
+
+    const permissionsResp = await drive.permissions.list({
+      fileId,
+      fields: "permissions(id,displayName,emailAddress,role,type)"
+    });
+
+    const personNames = new Set();
+    for (const activityItem of activities) {
+      const actors = activityItem.actors || [];
+      for (const actor of actors) {
+        const personName = actor.user?.knownUser?.personName;
+        if (personName) personNames.add(personName);
+      }
+      const actions = activityItem.actions || [];
+      for (const action of actions) {
+        const personName = action.actor?.user?.knownUser?.personName;
+        if (personName) personNames.add(personName);
+      }
+    }
+
+    const peopleDirectory = new Map();
+    const consentDirectory = await readConsents();
+    const permissionsDirectory = new Map();
+
+    for (const personName of personNames) {
+      try {
+        const { data } = await people.people.get({
+          resourceName: personName,
+          personFields: "names,emailAddresses"
+        });
+        const displayName = data.names?.[0]?.displayName || null;
+        const email = data.emailAddresses?.[0]?.value || null;
+        peopleDirectory.set(personName, { displayName, email });
+      } catch (err) {
+        const code = err?.code || err?.response?.status;
+        if (code && code !== 404) {
+          console.warn("People API lookup failed", personName, err?.message || err);
+        }
+      }
+    }
+
+    const permissions = permissionsResp.data.permissions || [];
+    permissions.forEach((permission) => {
+      if (permission.displayName && permission.emailAddress) {
+        permissionsDirectory.set(permission.displayName, {
+          email: permission.emailAddress
+        });
+      }
+    });
+
+    const items = activities.flatMap((activityItem) =>
+      normalizeActivityActions(
+        activityItem,
+        peopleDirectory,
+        permissionsDirectory,
+        consentDirectory
+      )
+    );
+
+    items.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+
+    res.json({
+      day: range.day,
+      items,
+      summary: summarizeHistoryItems(items),
+      nextPageToken: response.data.nextPageToken || null
+    });
+  } catch (err) {
+    console.error(err?.response?.data || err);
+    res.status(500).json({ error: "Failed to load day history" });
   }
 });
 

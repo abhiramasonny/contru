@@ -41,6 +41,40 @@ export interface AnalysisData {
   }[];
 }
 
+export interface HistoryActor {
+  id: string;
+  name: string;
+  email?: string | null;
+}
+
+export interface HistoryTarget {
+  title: string;
+  type?: string | null;
+  mimeType?: string | null;
+}
+
+export interface HistoryItem {
+  id: string;
+  timestamp?: string | null;
+  actionType: string;
+  actors: HistoryActor[];
+  targets: HistoryTarget[];
+  details?: string[];
+}
+
+export interface HistorySummary {
+  total: number;
+  byAction: Record<string, number>;
+  byActor: { name: string; count: number }[];
+}
+
+export interface DayHistory {
+  day: string;
+  items: HistoryItem[];
+  summary: HistorySummary;
+  nextPageToken?: string | null;
+}
+
 function apiUrl(path: string) {
   if (!path.startsWith("/")) return `/${path}`;
   return path;
@@ -79,6 +113,22 @@ export async function registerConsent() {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to register");
   return data;
+}
+
+export async function fetchDayHistory(
+  url: string,
+  day: string,
+  pageToken?: string | null
+) {
+  const res = await fetch(apiUrl("/api/history/day"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ url, day, pageToken })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to load history");
+  return data as DayHistory;
 }
 
 export async function logout() {
