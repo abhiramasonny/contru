@@ -43,6 +43,18 @@ export default function AnalyticsPage({
   user,
   initialYear,
 }: AnalyticsPageProps) {
+  const chicagoTimeZone = 'America/Chicago';
+  const formatDayLabel = (day: string) => {
+    const date = new Date(`${day}T12:00:00Z`);
+    if (Number.isNaN(date.getTime())) return day;
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: chicagoTimeZone,
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  };
+
   const [year, setYear] = useState(initialYear ?? new Date().getFullYear());
   const [data, setData] = useState<AnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,8 +122,13 @@ export default function AnalyticsPage({
     if (!data?.file?.modifiedTime) return '-';
     const date = new Date(data.file.modifiedTime);
     if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString();
-  }, [data]);
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: chicagoTimeZone,
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  }, [data, chicagoTimeZone]);
 
   const timelineMax = useMemo(() => {
     if (!data?.timeline?.length) return 1;
@@ -492,7 +509,9 @@ export default function AnalyticsPage({
                         style={{ animationDelay: `${index * 35}ms` }}
                       >
                         <div className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-emerald-400 animate-glow" />
-                        <div className="text-xs text-slate-500">{entry.date}</div>
+                        <div className="text-xs text-slate-500">
+                          {formatDayLabel(entry.date)}
+                        </div>
                         <div className="text-sm font-medium text-slate-200">
                           {entry.count} commits
                         </div>

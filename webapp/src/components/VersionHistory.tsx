@@ -112,7 +112,23 @@ function formatTime(value?: string | null) {
   if (!value) return 'Unknown time';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Unknown time';
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(date);
+}
+
+function formatDayLabel(day: string) {
+  const date = new Date(`${day}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return day;
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  }).format(date);
 }
 
 function summarizeItems(items: HistoryItem[]) {
@@ -260,7 +276,9 @@ export default function VersionHistory({
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-slate-200">{entry.day}</div>
+                        <div className="text-sm font-medium text-slate-200">
+                          {formatDayLabel(entry.day)}
+                        </div>
                         <div className="text-xs text-slate-500">{entry.count} activities</div>
                       </div>
                     </div>
