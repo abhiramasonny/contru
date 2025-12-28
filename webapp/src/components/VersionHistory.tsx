@@ -155,23 +155,43 @@ function getPrimaryActorId(item: HistoryItem) {
 }
 
 function groupIntoCommits(items: HistoryItem[]) {
+  const gapMs = 30 * 60 * 1000;
+  const sorted = [...items].sort((a, b) =>
+    (b.timestamp || '').localeCompare(a.timestamp || '')
+  );
   const commits: Array<{
     actorId: string;
     actorName: string;
     start?: string | null;
     end?: string | null;
     items: HistoryItem[];
+    lastTime?: number | null;
   }> = [];
   let current: (typeof commits)[number] | null = null;
-  for (const item of items) {
+  for (const item of sorted) {
     const actorId = getPrimaryActorId(item);
     const actorName = item.actors && item.actors.length ? item.actors[0].name : 'Unknown actor';
-    if (!current || current.actorId !== actorId) {
-      current = { actorId, actorName, start: item.timestamp, end: item.timestamp, items: [item] };
+    const itemTime = item.timestamp ? new Date(item.timestamp).getTime() : null;
+    if (
+      !current ||
+      current.actorId !== actorId ||
+      !itemTime ||
+      !current.lastTime ||
+      current.lastTime - itemTime > gapMs
+    ) {
+      current = {
+        actorId,
+        actorName,
+        start: item.timestamp,
+        end: item.timestamp,
+        items: [item],
+        lastTime: itemTime
+      };
       commits.push(current);
     } else {
       current.items.push(item);
       if (item.timestamp) current.end = item.timestamp;
+      current.lastTime = itemTime;
     }
   }
   return commits;
@@ -273,7 +293,7 @@ export default function VersionHistory({
         </div>
       </div>
 
-      <div className="bg-slate-950/60 border border-slate-800/70 rounded-xl p-6">
+      <div className="border-b border-slate-800/70 pb-6">
         {isLoading ? (
           <div className="animate-pulse space-y-3">
             <div className="h-4 w-40 bg-slate-900 rounded"></div>
@@ -283,7 +303,7 @@ export default function VersionHistory({
         ) : error ? (
           <p className="text-sm text-blue-300">{error}</p>
         ) : visibleDays.length ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-6">
             {visibleDays.map((entry) => {
               const dayData = historyByDay[entry.day];
               const isExpanded = expandedDays.includes(entry.day);
@@ -298,7 +318,7 @@ export default function VersionHistory({
               return (
                 <div
                   key={entry.day}
-                  className="border border-slate-800/70 rounded-xl p-5 bg-slate-950/40 min-h-[190px]"
+                  className="border-b border-slate-800/70 pb-6"
                 >
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-4">
@@ -306,7 +326,7 @@ export default function VersionHistory({
                         <div className="text-sm font-medium text-slate-200">
                           {formatDayLabel(entry.day)}
                         </div>
-                        <div className="text-xs text-slate-500">{entry.count} activities</div>
+                        <div className="text-xs text-slate-500">{entry.count} commits</div>
                       </div>
                     </div>
                     <button

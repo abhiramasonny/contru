@@ -15,6 +15,8 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, "..", "data");
 const CONSENTS_PATH = path.join(DATA_DIR, "consents.json");
 const ANALYSIS_CACHE_PATH = path.join(DATA_DIR, "analysis-cache.json");
+const COMMIT_GAP_MINUTES = 30;
+const COMMIT_GAP_MS = COMMIT_GAP_MINUTES * 60 * 1000;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -255,46 +257,129 @@ function computeStreaks(heatmap) {
   return { longestStreak: longest, currentStreak: current };
 }
 
+function getActivityActions(activity) {
+  return activity.actions?.length
+    ? activity.actions
+    : [
+        {
+          detail: activity.primaryActionDetail,
+          timestamp: activity.timestamp,
+          timeRange: activity.timeRange
+        }
+      ];
+}
+
+function resolveActionTimestamp(action, activity) {
+  return (
+    action.timestamp ||
+    action.timeRange?.endTime ||
+    activity.timestamp ||
+    activity.timeRange?.endTime ||
+    null
+  );
+}
+
+function buildCommitEvents(activities, year, peopleDirectory, permissionsDirectory, consentDirectory) {
+  const events = [];
+  for (const activity of activities) {
+    const actions = getActivityActions(activity);
+    for (const action of actions) {
+      const time = resolveActionTimestamp(action, activity);
+      if (!time) continue;
+      const date = new Date(time);
+      if (date.getFullYear() !== year) continue;
+      let actors = normalizeActors(
+        action.actor ? [action.actor] : activity.actors || [],
+        peopleDirectory,
+        permissionsDirectory,
+        consentDirectory
+      );
+      if (!actors.length) {
+        actors = [{ id: "unknown", name: "Unknown", email: null }];
+      }
+      actors.forEach((actor) => {
+        events.push({ timestamp: time, date, actor });
+      });
+    }
+  }
+  events.sort((a, b) => a.date - b.date);
+  return events;
+}
+
+function groupCommitEvents(events) {
+  const commits = [];
+  const lastCommitByActorDay = new Map();
+
+  for (const event of events) {
+    const day = isoDay(event.date);
+    const key = `${event.actor.id}:${day}`;
+    const lastIndex = lastCommitByActorDay.get(key);
+    if (lastIndex !== undefined) {
+      const lastCommit = commits[lastIndex];
+      if (event.date.getTime() - lastCommit.endTime <= COMMIT_GAP_MS) {
+        lastCommit.endTime = event.date.getTime();
+        lastCommit.eventCount += 1;
+        continue;
+      }
+    }
+
+    commits.push({
+      day,
+      actor: event.actor,
+      startTime: event.date.getTime(),
+      endTime: event.date.getTime(),
+      eventCount: 1
+    });
+    lastCommitByActorDay.set(key, commits.length - 1);
+  }
+
+  return commits;
+}
+
 function aggregateActivities(activities, year, peopleDirectory, permissionsDirectory, consentDirectory) {
   const totals = new Map();
   const heatmap = initHeatmap(year);
   const contributorHeatmaps = new Map();
   let activityCount = 0;
+  let commitCount = 0;
 
   for (const activity of activities) {
     const time = activity.timestamp || activity.timeRange?.endTime;
     if (!time) continue;
     const date = new Date(time);
     if (date.getFullYear() !== year) continue;
-
     activityCount += 1;
-    const day = isoDay(date);
+  }
+
+  const commitEvents = buildCommitEvents(
+    activities,
+    year,
+    peopleDirectory,
+    permissionsDirectory,
+    consentDirectory
+  );
+  const commits = groupCommitEvents(commitEvents);
+
+  commits.forEach((commit) => {
+    const day = commit.day;
+    const key = commit.actor.id;
+    commitCount += 1;
     if (heatmap[day] !== undefined) heatmap[day] += 1;
 
-    const actors = activity.actors || [];
-    for (const actor of actors) {
-      const resolved = resolveActor(
-        actor,
-        peopleDirectory,
-        permissionsDirectory,
-        consentDirectory
-      );
-      const key = resolved.key;
-      const entry = totals.get(key) || {
-        id: key,
-        name: resolved.name,
-        email: resolved.email,
-        count: 0
-      };
-      const userHeatmap = contributorHeatmaps.get(key) || initHeatmap(year);
-      if (!entry.email && resolved.email) entry.email = resolved.email;
-      if (entry.name === "Unknown" && resolved.name) entry.name = resolved.name;
-      entry.count += 1;
-      if (userHeatmap[day] !== undefined) userHeatmap[day] += 1;
-      totals.set(key, entry);
-      contributorHeatmaps.set(key, userHeatmap);
-    }
-  }
+    const entry = totals.get(key) || {
+      id: key,
+      name: commit.actor.name,
+      email: commit.actor.email,
+      count: 0
+    };
+    const userHeatmap = contributorHeatmaps.get(key) || initHeatmap(year);
+    if (!entry.email && commit.actor.email) entry.email = commit.actor.email;
+    if (entry.name === "Unknown" && commit.actor.name) entry.name = commit.actor.name;
+    entry.count += 1;
+    if (userHeatmap[day] !== undefined) userHeatmap[day] += 1;
+    totals.set(key, entry);
+    contributorHeatmaps.set(key, userHeatmap);
+  });
 
   const contributors = Array.from(totals.values()).sort((a, b) => b.count - a.count);
   const streaks = computeStreaks(heatmap);
@@ -307,7 +392,15 @@ function aggregateActivities(activities, year, peopleDirectory, permissionsDirec
     {}
   );
 
-  return { contributors, heatmap, contributorHeatmaps: contributorHeatmapPayload, activityCount, streaks };
+  return {
+    contributors,
+    heatmap,
+    contributorHeatmaps: contributorHeatmapPayload,
+    activityCount,
+    commitCount,
+    streaks,
+    commits
+  };
 }
 
 function resolveActor(actor, peopleDirectory, permissionsDirectory, consentDirectory) {
@@ -330,29 +423,15 @@ function resolveActor(actor, peopleDirectory, permissionsDirectory, consentDirec
   };
 }
 
-function buildActivityTimeline(activities, year, peopleDirectory, permissionsDirectory, consentDirectory) {
+function buildCommitTimeline(commits) {
   const dayMap = new Map();
 
-  for (const activity of activities) {
-    const time = activity.timestamp || activity.timeRange?.endTime;
-    if (!time) continue;
-    const date = new Date(time);
-    if (date.getFullYear() !== year) continue;
-    const day = isoDay(date);
-    const entry =
-      dayMap.get(day) || { date: day, count: 0, actorCounts: new Map() };
+  for (const commit of commits) {
+    const day = commit.day;
+    const entry = dayMap.get(day) || { date: day, count: 0, actorCounts: new Map() };
     entry.count += 1;
-    const actors = activity.actors || [];
-    for (const actor of actors) {
-      const resolved = resolveActor(
-        actor,
-        peopleDirectory,
-        permissionsDirectory,
-        consentDirectory
-      );
-      const current = entry.actorCounts.get(resolved.name) || 0;
-      entry.actorCounts.set(resolved.name, current + 1);
-    }
+    const current = entry.actorCounts.get(commit.actor.name) || 0;
+    entry.actorCounts.set(commit.actor.name, current + 1);
     dayMap.set(day, entry);
   }
 
@@ -690,7 +769,9 @@ app.post("/api/analyze", async (req, res) => {
     const cached = analysisCache.get(cacheKey);
     const force = Boolean(req.body?.force);
     if (!force && cached?.payload) {
-      return res.json(cached.payload);
+      if (typeof cached.payload.commitCount === "number") {
+        return res.json(cached.payload);
+      }
     }
 
     const activities = [];
@@ -749,20 +830,22 @@ app.post("/api/analyze", async (req, res) => {
       }
     });
 
-    const { contributors, heatmap, contributorHeatmaps, activityCount, streaks } = aggregateActivities(
+    const {
+      contributors,
+      heatmap,
+      contributorHeatmaps,
+      activityCount,
+      commitCount,
+      streaks,
+      commits
+    } = aggregateActivities(
       activities,
       year,
       peopleDirectory,
       permissionsDirectory,
       consentDirectory
     );
-    const timeline = buildActivityTimeline(
-      activities,
-      year,
-      peopleDirectory,
-      permissionsDirectory,
-      consentDirectory
-    );
+    const timeline = buildCommitTimeline(commits);
 
     const payload = {
       file: file.data,
@@ -772,6 +855,7 @@ app.post("/api/analyze", async (req, res) => {
       heatmap,
       contributorHeatmaps,
       activityCount,
+      commitCount,
       streaks,
       timeline
     };

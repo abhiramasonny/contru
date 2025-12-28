@@ -62,11 +62,11 @@ export default function Dashboard({ onAnalyze, onSignOut, user, onHome }: Dashbo
               <h2 className="text-lg font-semibold">Recent analyses</h2>
               <span className="text-xs text-gray-500">{history.length} saved</span>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-0">
               {history.map((entry) => (
                 <div
                   key={`${entry.url}-${entry.year}`}
-                  className="bg-gray-950 border border-gray-900 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                  className="py-4 border-b border-gray-900 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
                 >
                   <div className="flex items-center gap-4">
                     <ContributionGraph
@@ -79,8 +79,8 @@ export default function Dashboard({ onAnalyze, onSignOut, user, onHome }: Dashbo
                         {entry.fileName || 'Untitled document'}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {entry.year} · {entry.activityCount} activities · {entry.contributors}{' '}
-                        contributors
+                        {entry.year} · {entry.commitCount ?? entry.activityCount} commits ·{' '}
+                        {entry.contributors} contributors
                       </div>
                     </div>
                   </div>

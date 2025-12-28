@@ -5,6 +5,7 @@ export interface AnalysisHistoryEntry {
   fileType?: string;
   modifiedTime?: string;
   activityCount: number;
+  commitCount?: number;
   contributors: number;
   heatmap: Record<string, number>;
   userHeatmap?: Record<string, number>;

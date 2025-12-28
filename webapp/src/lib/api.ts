@@ -29,6 +29,7 @@ export interface AnalysisData {
   heatmap: Record<string, number>;
   contributorHeatmaps?: Record<string, Record<string, number>>;
   activityCount: number;
+  commitCount?: number;
   streaks?: {
     longestStreak: number;
     currentStreak: number;

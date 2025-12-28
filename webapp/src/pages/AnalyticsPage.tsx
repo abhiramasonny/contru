@@ -112,9 +112,8 @@ export default function AnalyticsPage({
     }
     const values = Object.values(data.heatmap || {});
     const activeDays = values.filter((value) => value > 0).length;
-    const avgPerActiveDay = activeDays
-      ? Number((data.activityCount / activeDays).toFixed(1))
-      : 0;
+    const commitCount = data.commitCount ?? data.activityCount;
+    const avgPerActiveDay = activeDays ? Number((commitCount / activeDays).toFixed(1)) : 0;
     return { activeDays, avgPerActiveDay };
   }, [data]);
 
@@ -166,6 +165,7 @@ export default function AnalyticsPage({
       fileType: data.file?.mimeType,
       modifiedTime: data.file?.modifiedTime,
       activityCount: data.activityCount,
+      commitCount: data.commitCount ?? data.activityCount,
       contributors: data.contributors.length,
       heatmap: data.heatmap,
       userHeatmap: userHeatmap || undefined,
@@ -175,7 +175,7 @@ export default function AnalyticsPage({
 
   const handleExport = () => {
     if (!data) return;
-    const rows = [['Name', 'Email', 'Activities']];
+    const rows = [['Name', 'Email', 'Commits']];
     data.contributors.forEach((c) => {
       rows.push([c.name, c.email || '', String(c.count)]);
     });
@@ -245,7 +245,7 @@ export default function AnalyticsPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-6 animate-fade-up">
+        <div className="border-b border-slate-800/70 pb-6 animate-fade-up">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-500">
@@ -263,7 +263,7 @@ export default function AnalyticsPage({
               </span>
               <span className="flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-slate-300">
                 <GitCommit className="w-3.5 h-3.5" />
-                {data?.activityCount || 0} commits
+                {data?.commitCount ?? data?.activityCount ?? 0} commits
               </span>
               <span className="flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-slate-300">
                 <Users className="w-3.5 h-3.5" />
@@ -277,9 +277,9 @@ export default function AnalyticsPage({
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[260px_minmax(0,1fr)_320px] gap-6 mt-8">
-          <aside className="space-y-6 min-w-0">
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
+        <div className="mt-8 space-y-10">
+          <section className="space-y-10 min-w-0">
+            <div className="border-b border-slate-800/70 pb-6">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500">
                 <GitGraph className="w-3.5 h-3.5 text-emerald-400" />
                 Repo stats
@@ -324,7 +324,7 @@ export default function AnalyticsPage({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
+            <div className="border-b border-slate-800/70 pb-6">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500 mb-4">
                 <GitGraph className="w-3.5 h-3.5 text-emerald-400" />
                 Group heatmap
@@ -349,7 +349,7 @@ export default function AnalyticsPage({
 
             <ContributionBreakdown contributors={data?.contributors || []} />
 
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
+            <div className="border-b border-slate-800/70 pb-6">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500 mb-4">
                 <Users className="w-3.5 h-3.5 text-emerald-400" />
                 Team share
@@ -369,10 +369,10 @@ export default function AnalyticsPage({
                 </div>
               )}
             </div>
-          </aside>
+          </section>
 
-          <main className="space-y-6 min-w-0">
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
+          <section className="space-y-10 min-w-0">
+            <div className="border-b border-slate-800/70 pb-6">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/70 pb-3">
                 <div className="flex items-center gap-2 text-sm text-slate-300">
                   <FileText className="w-4 h-4 text-emerald-400" />
@@ -403,7 +403,7 @@ export default function AnalyticsPage({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
+            <div className="border-b border-slate-800/70 pb-6">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2 text-sm text-slate-300">
                   <GitGraph className="w-4 h-4 text-emerald-400" />
@@ -460,7 +460,7 @@ export default function AnalyticsPage({
                   <div className="mt-8 grid grid-cols-2 gap-6 text-sm text-slate-300">
                     <div>
                       <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">
-                        Your activities
+                        Your commits
                       </p>
                       <h3 className="text-2xl font-semibold">{userStats.count}</h3>
                     </div>
@@ -480,7 +480,7 @@ export default function AnalyticsPage({
                     </div>
                     <div>
                       <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">
-                        Avg per active day
+                        Avg commits per active day
                       </p>
                       <h3 className="text-2xl font-semibold">{quickStats.avgPerActiveDay}</h3>
                     </div>
@@ -490,10 +490,10 @@ export default function AnalyticsPage({
                 <p className="text-slate-500 text-sm">Paste a document link to see activity.</p>
               )}
             </div>
-          </main>
+          </section>
 
-          <aside className="space-y-6 min-w-0">
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
+          <section className="space-y-10 min-w-0">
+            <div className="border-b border-slate-800/70 pb-6">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500 mb-4">
                 <GitCommit className="w-3.5 h-3.5 text-emerald-400" />
                 Commit log
@@ -534,7 +534,7 @@ export default function AnalyticsPage({
                 <p className="text-xs text-slate-500">No activity history yet.</p>
               )}
             </div>
-          </aside>
+          </section>
         </div>
 
         <div className="mt-10">
@@ -547,7 +547,7 @@ export default function AnalyticsPage({
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6 mt-10">
-          <details className="bg-slate-950/60 rounded-xl border border-slate-800/70 p-4">
+          <details className="border-b border-slate-800/70 pb-6">
             <summary className="cursor-pointer text-sm font-medium text-slate-200">
               Contributor details
             </summary>
