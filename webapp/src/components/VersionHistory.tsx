@@ -240,7 +240,7 @@ export default function VersionHistory({
         ) : error ? (
           <p className="text-sm text-blue-300">{error}</p>
         ) : visibleDays.length ? (
-          <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="grid grid-flow-col auto-cols-[minmax(320px,1fr)] gap-4 overflow-x-auto pb-2">
             {visibleDays.map((entry) => {
               const dayData = historyByDay[entry.day];
               const isExpanded = expandedDays.includes(entry.day);
@@ -255,7 +255,7 @@ export default function VersionHistory({
               return (
                 <div
                   key={entry.day}
-                  className="border border-slate-800/70 rounded-lg p-4 bg-slate-950/40 w-72 shrink-0"
+                  className="border border-slate-800/70 rounded-lg p-4 bg-slate-950/40 min-w-[320px] lg:min-w-[380px] xl:min-w-[420px]"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>

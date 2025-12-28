@@ -515,14 +515,16 @@ export default function AnalyticsPage({
                 <p className="text-xs text-slate-500">No activity history yet.</p>
               )}
             </div>
-
-            <VersionHistory
-              documentUrl={documentUrl}
-              heatmap={data?.heatmap}
-              isLoading={isLoading}
-              error={error}
-            />
           </aside>
+        </div>
+
+        <div className="mt-10">
+          <VersionHistory
+            documentUrl={documentUrl}
+            heatmap={data?.heatmap}
+            isLoading={isLoading}
+            error={error}
+          />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6 mt-10">
