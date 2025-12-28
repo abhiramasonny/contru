@@ -1,6 +1,8 @@
 interface ContributionGraphProps {
   heatmap: Record<string, number>;
   year: number;
+  variant?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
 function isoDay(date: Date) {
@@ -10,7 +12,12 @@ function isoDay(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-export default function ContributionGraph({ heatmap, year }: ContributionGraphProps) {
+export default function ContributionGraph({
+  heatmap,
+  year,
+  variant = 'md',
+  className
+}: ContributionGraphProps) {
   const start = new Date(year, 0, 1);
   const end = new Date(year, 11, 31);
   const startDay = new Date(start);
@@ -41,8 +48,11 @@ export default function ContributionGraph({ heatmap, year }: ContributionGraphPr
     'bg-emerald-400',
   ];
 
+  const sizeClass =
+    variant === 'sm' ? 'w-2.5 h-2.5' : variant === 'lg' ? 'w-4 h-4' : 'w-3 h-3';
+
   return (
-    <div className="overflow-x-auto">
+    <div className={`overflow-x-auto ${className || ''}`}>
       <div className="inline-flex gap-1">
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="flex flex-col gap-1">
@@ -52,7 +62,7 @@ export default function ContributionGraph({ heatmap, year }: ContributionGraphPr
               return (
                 <div
                   key={key}
-                  className={`w-3 h-3 rounded-sm ${
+                  className={`${sizeClass} rounded-sm ${
                     day.inYear ? intensityClasses[level] : 'bg-transparent'
                   } hover:ring-1 hover:ring-emerald-300/60 cursor-pointer transition-all`}
                   title={`${key}: ${day.value} activities`}

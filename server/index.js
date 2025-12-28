@@ -14,6 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, "..", "data");
 const CONSENTS_PATH = path.join(DATA_DIR, "consents.json");
+const ANALYSIS_CACHE_PATH = path.join(DATA_DIR, "analysis-cache.json");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,9 @@ async function ensureDatabase() {
   if (!pool) return;
   await pool.query(
     "CREATE TABLE IF NOT EXISTS consents (person_name text primary key, display_name text, email text, updated_at timestamptz)"
+  );
+  await pool.query(
+    "CREATE TABLE IF NOT EXISTS analysis_cache (file_id text, year int, payload jsonb, updated_at timestamptz, PRIMARY KEY (file_id, year))"
   );
 }
 
@@ -135,6 +139,66 @@ async function writeConsents(consentMap) {
   await fs.writeFile(CONSENTS_PATH, JSON.stringify(payload, null, 2));
 }
 
+async function readAnalysisCache() {
+  if (pool) {
+    const { rows } = await pool.query(
+      "SELECT file_id, year, payload, updated_at FROM analysis_cache"
+    );
+    return new Map(
+      rows.map((row) => [
+        `${row.file_id}:${row.year}`,
+        {
+          fileId: row.file_id,
+          year: row.year,
+          payload: row.payload,
+          updatedAt: row.updated_at
+        }
+      ])
+    );
+  }
+
+  try {
+    const raw = await fs.readFile(ANALYSIS_CACHE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return new Map(
+      parsed.map((entry) => [
+        `${entry.fileId}:${entry.year}`,
+        entry
+      ])
+    );
+  } catch (err) {
+    if (err.code === "ENOENT") return new Map();
+    throw err;
+  }
+}
+
+async function writeAnalysisCache(cacheMap) {
+  if (pool) {
+    const values = Array.from(cacheMap.values());
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (const entry of values) {
+        await client.query(
+          "INSERT INTO analysis_cache (file_id, year, payload, updated_at) VALUES ($1, $2, $3, $4) ON CONFLICT (file_id, year) DO UPDATE SET payload = EXCLUDED.payload, updated_at = EXCLUDED.updated_at",
+          [entry.fileId, entry.year, entry.payload, entry.updatedAt]
+        );
+      }
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+    return;
+  }
+
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  const payload = Array.from(cacheMap.values());
+  await fs.writeFile(ANALYSIS_CACHE_PATH, JSON.stringify(payload, null, 2));
+}
+
 function parseFileId(input) {
   if (!input) return null;
   const docMatch = input.match(/\/document\/d\/(.+?)(?:\/|$)/);
@@ -194,6 +258,7 @@ function computeStreaks(heatmap) {
 function aggregateActivities(activities, year, peopleDirectory, permissionsDirectory, consentDirectory) {
   const totals = new Map();
   const heatmap = initHeatmap(year);
+  const contributorHeatmaps = new Map();
   let activityCount = 0;
 
   for (const activity of activities) {
@@ -227,17 +292,28 @@ function aggregateActivities(activities, year, peopleDirectory, permissionsDirec
         email,
         count: 0
       };
+      const userHeatmap = contributorHeatmaps.get(key) || initHeatmap(year);
       if (!entry.email && email) entry.email = email;
       if (entry.name === "Unknown" && friendlyName) entry.name = friendlyName;
       entry.count += 1;
+      if (userHeatmap[day] !== undefined) userHeatmap[day] += 1;
       totals.set(key, entry);
+      contributorHeatmaps.set(key, userHeatmap);
     }
   }
 
   const contributors = Array.from(totals.values()).sort((a, b) => b.count - a.count);
   const streaks = computeStreaks(heatmap);
 
-  return { contributors, heatmap, activityCount, streaks };
+  const contributorHeatmapPayload = Array.from(contributorHeatmaps.entries()).reduce(
+    (acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    },
+    {}
+  );
+
+  return { contributors, heatmap, contributorHeatmaps: contributorHeatmapPayload, activityCount, streaks };
 }
 
 app.get("/auth/google", (req, res) => {
@@ -354,6 +430,13 @@ app.post("/api/analyze", async (req, res) => {
       return res.status(400).json({ error: "Invalid year" });
     }
 
+    const cacheKey = `${fileId}:${year}`;
+    const analysisCache = await readAnalysisCache();
+    const cached = analysisCache.get(cacheKey);
+    if (cached?.payload) {
+      return res.json(cached.payload);
+    }
+
     const activities = [];
     let pageToken = undefined;
 
@@ -410,7 +493,7 @@ app.post("/api/analyze", async (req, res) => {
       }
     });
 
-    const { contributors, heatmap, activityCount, streaks } = aggregateActivities(
+    const { contributors, heatmap, contributorHeatmaps, activityCount, streaks } = aggregateActivities(
       activities,
       year,
       peopleDirectory,
@@ -418,15 +501,26 @@ app.post("/api/analyze", async (req, res) => {
       consentDirectory
     );
 
-    res.json({
+    const payload = {
       file: file.data,
       permissions,
       year,
       contributors,
       heatmap,
+      contributorHeatmaps,
       activityCount,
       streaks
+    };
+
+    analysisCache.set(cacheKey, {
+      fileId,
+      year,
+      payload,
+      updatedAt: new Date().toISOString()
     });
+    await writeAnalysisCache(analysisCache);
+
+    res.json(payload);
   } catch (err) {
     console.error(err?.response?.data || err);
     res.status(500).json({ error: "Failed to analyze file" });

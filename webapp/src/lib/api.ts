@@ -27,6 +27,7 @@ export interface AnalysisData {
   year: number;
   contributors: Contributor[];
   heatmap: Record<string, number>;
+  contributorHeatmaps?: Record<string, Record<string, number>>;
   activityCount: number;
   streaks?: {
     longestStreak: number;

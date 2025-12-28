@@ -11,6 +11,7 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('landing');
   const [user, setUser] = useState<ApiUser | null>(null);
   const [analysisUrl, setAnalysisUrl] = useState('');
+  const [analysisYear, setAnalysisYear] = useState<number | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,10 @@ function App() {
     setCurrentView('landing');
   };
 
+  const handleHome = () => {
+    setCurrentView(user ? 'dashboard' : 'landing');
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'landing':
@@ -60,9 +65,10 @@ function App() {
           <Dashboard
             user={user}
             onSignOut={handleLogout}
-            onHome={() => setCurrentView('landing')}
-            onAnalyze={(url: string) => {
+            onHome={handleHome}
+            onAnalyze={(url: string, year?: number) => {
               setAnalysisUrl(url);
+              setAnalysisYear(year ?? null);
               setCurrentView('analytics');
             }}
           />
@@ -72,8 +78,9 @@ function App() {
           <AnalyticsPage
             user={user}
             documentUrl={analysisUrl}
+            initialYear={analysisYear ?? undefined}
             onSignOut={handleLogout}
-            onHome={() => setCurrentView('landing')}
+            onHome={handleHome}
             onBack={() => setCurrentView('dashboard')}
           />
         );
