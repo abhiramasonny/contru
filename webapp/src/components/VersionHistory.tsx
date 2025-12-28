@@ -150,6 +150,33 @@ function summarizeItems(items: HistoryItem[]) {
   };
 }
 
+function getPrimaryActorId(item: HistoryItem) {
+  return item.actors && item.actors.length ? item.actors[0].id : 'unknown';
+}
+
+function groupIntoCommits(items: HistoryItem[]) {
+  const commits: Array<{
+    actorId: string;
+    actorName: string;
+    start?: string | null;
+    end?: string | null;
+    items: HistoryItem[];
+  }> = [];
+  let current: (typeof commits)[number] | null = null;
+  for (const item of items) {
+    const actorId = getPrimaryActorId(item);
+    const actorName = item.actors && item.actors.length ? item.actors[0].name : 'Unknown actor';
+    if (!current || current.actorId !== actorId) {
+      current = { actorId, actorName, start: item.timestamp, end: item.timestamp, items: [item] };
+      commits.push(current);
+    } else {
+      current.items.push(item);
+      if (item.timestamp) current.end = item.timestamp;
+    }
+  }
+  return commits;
+}
+
 export default function VersionHistory({
   documentUrl,
   heatmap,
@@ -318,40 +345,56 @@ export default function VersionHistory({
                             ) : null}
                           </div>
                           <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                            {dayData.items.map((item) => {
-                              const meta = ACTION_META[item.actionType] || ACTION_META.unknown;
-                              const Icon = meta.icon;
+                            {groupIntoCommits(dayData.items).map((commit, ci) => {
                               return (
-                                <div
-                                  key={item.id}
-                                  className="border border-slate-800/70 rounded-lg p-3 bg-slate-950/70"
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <div
-                                      className={`w-9 h-9 rounded-md flex items-center justify-center ${meta.badge}`}
-                                    >
-                                      <Icon className="w-4 h-4" />
+                                <div key={`${commit.actorId}-${ci}`}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs text-slate-300 font-medium">
+                                      {commit.actorName} — {commit.items.length} event{commit.items.length !== 1 ? 's' : ''}
                                     </div>
-                                    <div className="flex-1">
-                                      <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div className="text-sm font-medium text-slate-200">
-                                          {meta.label}
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                          {formatTime(item.timestamp)}
-                                        </div>
-                                      </div>
-                                      <div className="text-xs text-slate-400 mt-1">
-                                        <span className={meta.text}>{formatActors(item)}</span>
-                                        <span className="text-slate-600"> | </span>
-                                        <span>{formatTargets(item)}</span>
-                                      </div>
-                                      {item.details?.length ? (
-                                        <div className="text-xs text-slate-500 mt-2">
-                                          {item.details.join(' | ')}
-                                        </div>
-                                      ) : null}
+                                    <div className="text-xs text-slate-500">
+                                      {formatTime(commit.start)}{commit.end && commit.end !== commit.start ? ` — ${formatTime(commit.end)}` : ''}
                                     </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {commit.items.map((item) => {
+                                      const meta = ACTION_META[item.actionType] || ACTION_META.unknown;
+                                      const Icon = meta.icon;
+                                      return (
+                                        <div
+                                          key={item.id}
+                                          className="border border-slate-800/70 rounded-lg p-3 bg-slate-950/70"
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <div
+                                              className={`w-9 h-9 rounded-md flex items-center justify-center ${meta.badge}`}
+                                            >
+                                              <Icon className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="text-sm font-medium text-slate-200">
+                                                  {meta.label}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                  {formatTime(item.timestamp)}
+                                                </div>
+                                              </div>
+                                              <div className="text-xs text-slate-400 mt-1">
+                                                <span className={meta.text}>{formatActors(item)}</span>
+                                                <span className="text-slate-600"> | </span>
+                                                <span>{formatTargets(item)}</span>
+                                              </div>
+                                              {item.details?.length ? (
+                                                <div className="text-xs text-slate-500 mt-2">
+                                                  {item.details.join(' | ')}
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               );
