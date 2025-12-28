@@ -240,7 +240,7 @@ export default function VersionHistory({
         ) : error ? (
           <p className="text-sm text-blue-300">{error}</p>
         ) : visibleDays.length ? (
-          <div className="grid grid-flow-col auto-cols-[minmax(360px,1fr)] gap-4 overflow-x-auto pb-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visibleDays.map((entry) => {
               const dayData = historyByDay[entry.day];
               const isExpanded = expandedDays.includes(entry.day);
@@ -255,7 +255,7 @@ export default function VersionHistory({
               return (
                 <div
                   key={entry.day}
-                  className="border border-slate-800/70 rounded-xl p-5 bg-slate-950/40 min-w-[360px] lg:min-w-[420px] xl:min-w-[480px] min-h-[190px]"
+                  className="border border-slate-800/70 rounded-xl p-5 bg-slate-950/40 min-h-[190px]"
                 >
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-4">
@@ -362,7 +362,7 @@ export default function VersionHistory({
             {dayLimit < activityDays.length ? (
               <button
                 onClick={() => setDayLimit((prev) => prev + 20)}
-                className="px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900 h-full"
+                className="px-3 py-2 text-xs border border-slate-800 rounded-md hover:bg-slate-900"
               >
                 Show more days
               </button>
