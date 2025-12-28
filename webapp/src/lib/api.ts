@@ -34,6 +34,11 @@ export interface AnalysisData {
     currentStreak: number;
   };
   permissions?: PermissionEntry[];
+  timeline?: {
+    date: string;
+    count: number;
+    topContributors?: string[];
+  }[];
 }
 
 function apiUrl(path: string) {

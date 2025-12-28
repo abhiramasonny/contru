@@ -273,28 +273,22 @@ function aggregateActivities(activities, year, peopleDirectory, permissionsDirec
 
     const actors = activity.actors || [];
     for (const actor of actors) {
-      const user = actor.user || {};
-      const knownUser = user.knownUser || {};
-      const personName = knownUser.personName || null;
-      const resolved = (personName && peopleDirectory?.get(personName)) || {};
-      const permResolved =
-        (knownUser.displayName && permissionsDirectory?.get(knownUser.displayName)) || {};
-      const consentResolved = (personName && consentDirectory?.get(personName)) || {};
-      const displayName = resolved.displayName || knownUser.displayName || personName || "Unknown";
-      const email = resolved.email || consentResolved.email || permResolved.email || null;
-      const friendlyName =
-        consentResolved.displayName || consentResolved.name || displayName || "Unknown";
-
-      const key = personName || displayName;
+      const resolved = resolveActor(
+        actor,
+        peopleDirectory,
+        permissionsDirectory,
+        consentDirectory
+      );
+      const key = resolved.key;
       const entry = totals.get(key) || {
         id: key,
-        name: friendlyName,
-        email,
+        name: resolved.name,
+        email: resolved.email,
         count: 0
       };
       const userHeatmap = contributorHeatmaps.get(key) || initHeatmap(year);
-      if (!entry.email && email) entry.email = email;
-      if (entry.name === "Unknown" && friendlyName) entry.name = friendlyName;
+      if (!entry.email && resolved.email) entry.email = resolved.email;
+      if (entry.name === "Unknown" && resolved.name) entry.name = resolved.name;
       entry.count += 1;
       if (userHeatmap[day] !== undefined) userHeatmap[day] += 1;
       totals.set(key, entry);
@@ -314,6 +308,68 @@ function aggregateActivities(activities, year, peopleDirectory, permissionsDirec
   );
 
   return { contributors, heatmap, contributorHeatmaps: contributorHeatmapPayload, activityCount, streaks };
+}
+
+function resolveActor(actor, peopleDirectory, permissionsDirectory, consentDirectory) {
+  const user = actor.user || {};
+  const knownUser = user.knownUser || {};
+  const personName = knownUser.personName || null;
+  const resolved = (personName && peopleDirectory?.get(personName)) || {};
+  const permResolved =
+    (knownUser.displayName && permissionsDirectory?.get(knownUser.displayName)) || {};
+  const consentResolved = (personName && consentDirectory?.get(personName)) || {};
+  const displayName = resolved.displayName || knownUser.displayName || personName || "Unknown";
+  const email = resolved.email || consentResolved.email || permResolved.email || null;
+  const friendlyName =
+    consentResolved.displayName || consentResolved.name || displayName || "Unknown";
+
+  return {
+    key: personName || displayName,
+    name: friendlyName,
+    email
+  };
+}
+
+function buildActivityTimeline(activities, year, peopleDirectory, permissionsDirectory, consentDirectory) {
+  const dayMap = new Map();
+
+  for (const activity of activities) {
+    const time = activity.timestamp || activity.timeRange?.endTime;
+    if (!time) continue;
+    const date = new Date(time);
+    if (date.getFullYear() !== year) continue;
+    const day = isoDay(date);
+    const entry =
+      dayMap.get(day) || { date: day, count: 0, actorCounts: new Map() };
+    entry.count += 1;
+    const actors = activity.actors || [];
+    for (const actor of actors) {
+      const resolved = resolveActor(
+        actor,
+        peopleDirectory,
+        permissionsDirectory,
+        consentDirectory
+      );
+      const current = entry.actorCounts.get(resolved.name) || 0;
+      entry.actorCounts.set(resolved.name, current + 1);
+    }
+    dayMap.set(day, entry);
+  }
+
+  return Array.from(dayMap.values())
+    .map((entry) => {
+      const topContributors = Array.from(entry.actorCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([name]) => name);
+      return {
+        date: entry.date,
+        count: entry.count,
+        topContributors
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 14);
 }
 
 app.get("/auth/google", (req, res) => {
@@ -501,6 +557,13 @@ app.post("/api/analyze", async (req, res) => {
       permissionsDirectory,
       consentDirectory
     );
+    const timeline = buildActivityTimeline(
+      activities,
+      year,
+      peopleDirectory,
+      permissionsDirectory,
+      consentDirectory
+    );
 
     const payload = {
       file: file.data,
@@ -510,7 +573,8 @@ app.post("/api/analyze", async (req, res) => {
       heatmap,
       contributorHeatmaps,
       activityCount,
-      streaks
+      streaks,
+      timeline
     };
 
     analysisCache.set(cacheKey, {

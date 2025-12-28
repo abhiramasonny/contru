@@ -99,6 +99,11 @@ export default function AnalyticsPage({
     return date.toLocaleDateString();
   }, [data]);
 
+  const timelineMax = useMemo(() => {
+    if (!data?.timeline?.length) return 1;
+    return Math.max(1, ...data.timeline.map((entry) => entry.count));
+  }, [data]);
+
   useEffect(() => {
     if (!data || !documentUrl) return;
     saveAnalysisHistory({
@@ -343,6 +348,47 @@ export default function AnalyticsPage({
 
         <div className="mb-12">
           <ContributionBreakdown contributors={data?.contributors || []} />
+        </div>
+
+        <div className="mb-12">
+          <div className="bg-gray-950 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Activity history</h3>
+            {data?.timeline?.length ? (
+              <div className="space-y-3">
+                {data.timeline.map((entry) => {
+                  const width = Math.round((entry.count / timelineMax) * 100);
+                  return (
+                    <div
+                      key={entry.date}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                    >
+                      <div className="text-sm text-gray-300">
+                        <div className="font-medium">{entry.date}</div>
+                        <div className="text-xs text-gray-500">
+                          {entry.topContributors?.length
+                            ? `Top: ${entry.topContributors.join(', ')}`
+                            : 'No named contributors'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 w-full sm:w-[55%]">
+                        <div className="h-2 rounded-full bg-gray-900 flex-1 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-emerald-400/80"
+                            style={{ width: `${width}%` }}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-400 w-10 text-right">
+                          {entry.count}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No activity history yet.</p>
+            )}
+          </div>
         </div>
 
         <details className="mb-6 bg-gray-950 rounded-lg border border-gray-900 p-4">
