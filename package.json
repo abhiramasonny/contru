@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node server/index.js",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "build": "npm --prefix webapp install --include=dev && npm --prefix webapp run build",
+    "heroku-postbuild": "npm --prefix webapp install --include=dev && npm --prefix webapp run build"
   },
   "dependencies": {
     "connect-pg-simple": "^9.0.0",
